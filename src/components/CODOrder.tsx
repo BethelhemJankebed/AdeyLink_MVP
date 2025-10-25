@@ -1,82 +1,97 @@
-import React, { useState } from 'react'
-import { useAuth } from './AuthContext'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
-import { Textarea } from './ui/textarea'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card'
-import { Badge } from './ui/badge'
-import { Clock, MapPin, Phone, User } from 'lucide-react'
-import { projectId, publicAnonKey } from '../utils/supabase/info'
+import React, { useState } from "react";
+import { toast } from "sonner@2.0.3";
+import { useAuth } from "./AuthContext";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Clock, MapPin, Phone, User } from "lucide-react";
+import { projectId, publicAnonKey } from "../utils/supabase/info";
 
 interface Product {
-  id: string
-  title: string
-  description: string
-  price: number
-  images: string[]
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  images: string[];
 }
 
 interface Seller {
-  id: string
-  name: string
-  location: { city: string; lat: number; lng: number }
-  phone: string
+  id: string;
+  name: string;
+  location: { city: string; lat: number; lng: number };
+  phone: string;
 }
 
 interface CODOrderProps {
-  product: Product
-  seller: Seller
-  onClose: () => void
-  onSuccess: (orderId: string) => void
+  product: Product;
+  seller: Seller;
+  onClose: () => void;
+  onSuccess: (orderId: string) => void;
 }
 
-export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps) {
+export function CODOrder({
+  product,
+  seller,
+  onClose,
+  onSuccess,
+}: CODOrderProps) {
   const [formData, setFormData] = useState({
     quantity: 1,
-    deliveryAddress: '',
-    deliveryPhone: '',
-    deliveryNotes: '',
-    preferredDeliveryTime: ''
-  })
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [estimatedDelivery, setEstimatedDelivery] = useState<string | null>(null)
-  const { user, accessToken } = useAuth()
+    deliveryAddress: "",
+    deliveryPhone: "",
+    deliveryNotes: "",
+    preferredDeliveryTime: "",
+  });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [estimatedDelivery, setEstimatedDelivery] = useState<string | null>(
+    null
+  );
+  const { user, accessToken } = useAuth();
 
   const calculateDeliveryTime = () => {
     // Simple delivery time calculation based on distance
     // In a real app, this would use actual distance calculation
-    const baseTime = 30 // 30 minutes base
-    const randomDelay = Math.floor(Math.random() * 60) // 0-60 minutes random delay
-    const totalMinutes = baseTime + randomDelay
-    
-    const deliveryTime = new Date()
-    deliveryTime.setMinutes(deliveryTime.getMinutes() + totalMinutes)
-    
-    return deliveryTime.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
-    })
-  }
+    const baseTime = 30; // 30 minutes base
+    const randomDelay = Math.floor(Math.random() * 60); // 0-60 minutes random delay
+    const totalMinutes = baseTime + randomDelay;
+
+    const deliveryTime = new Date();
+    deliveryTime.setMinutes(deliveryTime.getMinutes() + totalMinutes);
+
+    return deliveryTime.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
     try {
-      const deliveryTime = calculateDeliveryTime()
-      setEstimatedDelivery(deliveryTime)
+      const deliveryTime = calculateDeliveryTime();
+      setEstimatedDelivery(deliveryTime);
 
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/cod-order`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             productId: product.id,
@@ -89,26 +104,66 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
             deliveryNotes: formData.deliveryNotes,
             preferredDeliveryTime: formData.preferredDeliveryTime,
             estimatedDeliveryTime: deliveryTime,
-            status: 'pending'
-          })
+            status: "pending",
+          }),
         }
-      )
+      );
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to place order')
+        throw new Error(data.error || "Failed to place order");
       }
 
-      onSuccess(data.orderId)
-    } catch (err: any) {
-      setError(err.message || 'Failed to place order')
-    } finally {
-      setLoading(false)
-    }
-  }
+      // Also create an admin-facing order record (best-effort)
+      try {
+        await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/orders`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              products: [
+                {
+                  productId: product.id,
+                  sellerId: seller.id,
+                  quantity: formData.quantity,
+                },
+              ],
+              total: product.price * formData.quantity,
+              paymentMethod: "cod",
+            }),
+          }
+        );
+      } catch (notifyErr) {
+        // log but don't block the happy path
+        console.error("Failed to create admin order record:", notifyErr);
+      }
 
-  const totalAmount = product.price * formData.quantity
+      // Show confirmation to the user
+      try {
+        const orderId = data.orderId || data.id || null;
+        toast.success(
+          orderId
+            ? `Order placed — confirmation (#${orderId})`
+            : "Order placed — confirmation sent"
+        );
+      } catch (tErr) {
+        // ignore toast errors
+      }
+
+      onSuccess(data.orderId);
+    } catch (err: any) {
+      setError(err.message || "Failed to place order");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalAmount = product.price * formData.quantity;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
@@ -122,9 +177,10 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
             Place your order and pay when the delivery person arrives
           </CardDescription>
         </CardHeader>
-        
+
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-6">
+          {/* make extra bottom padding so sticky footer doesn't cover inputs */}
+          <CardContent className="space-y-6 pb-24">
             {error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
                 {error}
@@ -136,8 +192,8 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
               <h3 className="font-medium mb-2">Order Details</h3>
               <div className="flex items-start gap-3">
                 {product.images && product.images[0] ? (
-                  <img 
-                    src={product.images[0]} 
+                  <img
+                    src={product.images[0]}
                     alt={product.title}
                     className="w-16 h-16 object-cover rounded"
                   />
@@ -148,9 +204,13 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
                 )}
                 <div className="flex-1">
                   <h4 className="font-medium">{product.title}</h4>
-                  <p className="text-sm text-gray-600 mb-2">{product.description}</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    {product.description}
+                  </p>
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="font-medium">${product.price.toFixed(2)} each</span>
+                    <span className="font-medium">
+                      ${product.price.toFixed(2)} each
+                    </span>
                     <Badge variant="outline">COD Available</Badge>
                   </div>
                 </div>
@@ -164,7 +224,9 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
                 Seller Information
               </h3>
               <div className="text-sm space-y-1">
-                <p><strong>Name:</strong> {seller.name}</p>
+                <p>
+                  <strong>Name:</strong> {seller.name}
+                </p>
                 <p className="flex items-center gap-1">
                   <MapPin className="w-3 h-3" />
                   <strong>Location:</strong> {seller.location.city}
@@ -185,7 +247,12 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
                   type="number"
                   min="1"
                   value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 1 })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quantity: parseInt(e.target.value) || 1,
+                    })
+                  }
                   required
                 />
               </div>
@@ -196,7 +263,12 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
                   id="deliveryAddress"
                   placeholder="Enter your complete delivery address..."
                   value={formData.deliveryAddress}
-                  onChange={(e) => setFormData({ ...formData, deliveryAddress: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      deliveryAddress: e.target.value,
+                    })
+                  }
                   rows={3}
                   required
                 />
@@ -209,18 +281,27 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
                   type="tel"
                   placeholder="+251912345678"
                   value={formData.deliveryPhone}
-                  onChange={(e) => setFormData({ ...formData, deliveryPhone: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deliveryPhone: e.target.value })
+                  }
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="preferredDeliveryTime">Preferred Delivery Time</Label>
+                <Label htmlFor="preferredDeliveryTime">
+                  Preferred Delivery Time
+                </Label>
                 <Input
                   id="preferredDeliveryTime"
                   type="datetime-local"
                   value={formData.preferredDeliveryTime}
-                  onChange={(e) => setFormData({ ...formData, preferredDeliveryTime: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      preferredDeliveryTime: e.target.value,
+                    })
+                  }
                 />
               </div>
 
@@ -230,7 +311,9 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
                   id="deliveryNotes"
                   placeholder="Any special instructions for delivery..."
                   value={formData.deliveryNotes}
-                  onChange={(e) => setFormData({ ...formData, deliveryNotes: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deliveryNotes: e.target.value })
+                  }
                   rows={2}
                 />
               </div>
@@ -242,7 +325,9 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Product Price:</span>
-                  <span>${product.price.toFixed(2)} × {formData.quantity}</span>
+                  <span>
+                    ${product.price.toFixed(2)} × {formData.quantity}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Delivery Fee:</span>
@@ -279,17 +364,31 @@ export function CODOrder({ product, seller, onClose, onSuccess }: CODOrderProps)
               </div>
             )}
           </CardContent>
-          
-          <CardFooter className="flex gap-3">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+
+          <CardFooter className="flex gap-3 sticky bottom-0 bg-card z-10">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700">
-              {loading ? 'Placing Order...' : 'Place COD Order'}
+            <Button
+              type="submit"
+              disabled={
+                loading ||
+                !formData.deliveryAddress.trim() ||
+                !formData.deliveryPhone.trim() ||
+                formData.quantity < 1
+              }
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              {loading ? "Placing Order..." : "Place COD Order"}
             </Button>
           </CardFooter>
         </form>
       </Card>
     </div>
-  )
+  );
 }

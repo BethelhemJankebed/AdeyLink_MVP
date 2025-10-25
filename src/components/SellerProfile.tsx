@@ -1,86 +1,100 @@
-import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Star, Users, MapPin, MessageCircle, Heart, Plus, UserPlus } from 'lucide-react'
-import { ImageWithFallback } from './figma/ImageWithFallback'
-import { projectId, publicAnonKey } from '../utils/supabase/info'
-import { useAuth } from './AuthContext'
-import { Button } from './ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
-import { Card, CardContent } from './ui/card'
-import { Textarea } from './ui/textarea'
-import { AddProduct } from './AddProduct'
-import { BecomeSeller } from './BecomeSeller'
-import { CODOrder } from './CODOrder'
-import { DeliveryTracking } from './DeliveryTracking'
+import React, { useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  Star,
+  Users,
+  MapPin,
+  MessageCircle,
+  Heart,
+  Plus,
+  UserPlus,
+} from "lucide-react";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { projectId, publicAnonKey } from "../utils/supabase/info";
+import { useAuth } from "./AuthContext";
+import { Button } from "./ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Card, CardContent } from "./ui/card";
+import { Textarea } from "./ui/textarea";
+import { AddProduct } from "./AddProduct";
+import { BecomeSeller } from "./BecomeSeller";
+import { CODOrder } from "./CODOrder";
+import { DeliveryTracking } from "./DeliveryTracking";
 
 interface Seller {
-  id: string
-  name: string
-  email: string
-  bio: string
-  location: { city: string; lat: number; lng: number }
-  interests: string[]
-  followers: number
-  following: number
-  avatar: string
+  id: string;
+  name: string;
+  email: string;
+  bio: string;
+  location: { city: string; lat: number; lng: number };
+  interests: string[];
+  followers: number;
+  following: number;
+  avatar: string;
 }
 
 interface Product {
-  id: string
-  title: string
-  description: string
-  price: number
-  category: string
-  images: string[]
-  available: boolean
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  images: string[];
+  available: boolean;
 }
 
 interface Review {
-  id: string
-  rating: number
-  comment: string
-  date: string
+  id: string;
+  rating: number;
+  comment: string;
+  date: string;
   buyer: {
-    id: string
-    name: string
-    avatar: string
-  }
+    id: string;
+    name: string;
+    avatar: string;
+  };
 }
 
 interface Video {
-  id: string
-  title: string
-  description: string
-  videoUrl: string
-  likes: number
-  commentCount: number
+  id: string;
+  title: string;
+  description: string;
+  videoUrl: string;
+  likes: number;
+  commentCount: number;
 }
 
 interface SellerProfileProps {
-  sellerId: string
-  onBack: () => void
-  onMessageClick: (sellerId: string) => void
-  onProductClick: (productId: string) => void
+  sellerId: string;
+  onBack: () => void;
+  onMessageClick: (sellerId: string) => void;
+  onProductClick: (productId: string) => void;
 }
 
-export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick }: SellerProfileProps) {
-  const [seller, setSeller] = useState<Seller | null>(null)
-  const [products, setProducts] = useState<Product[]>([])
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [videos, setVideos] = useState<Video[]>([])
-  const [isFollowing, setIsFollowing] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [newReview, setNewReview] = useState({ rating: 5, comment: '' })
-  const [showAddProduct, setShowAddProduct] = useState(false)
-  const [showBecomeSeller, setShowBecomeSeller] = useState(false)
-  const [showCODOrder, setShowCODOrder] = useState(false)
-  const [showDeliveryTracking, setShowDeliveryTracking] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null)
-  const { user, accessToken } = useAuth()
+export function SellerProfile({
+  sellerId,
+  onBack,
+  onMessageClick,
+  onProductClick,
+}: SellerProfileProps) {
+  const [seller, setSeller] = useState<Seller | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [showBecomeSeller, setShowBecomeSeller] = useState(false);
+  const [showCODOrder, setShowCODOrder] = useState(false);
+  const [showDeliveryTracking, setShowDeliveryTracking] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
+  const { user, accessToken } = useAuth();
 
   useEffect(() => {
-    fetchSellerData()
-  }, [sellerId])
+    fetchSellerData();
+  }, [sellerId]);
 
   const fetchSellerData = async () => {
     try {
@@ -89,12 +103,12 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
         `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/user/${sellerId}`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
         }
-      )
+      );
       if (sellerResponse.ok) {
-        setSeller(await sellerResponse.json())
+        setSeller(await sellerResponse.json());
       }
 
       // Fetch products
@@ -102,12 +116,12 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
         `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/seller/${sellerId}/products`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
         }
-      )
+      );
       if (productsResponse.ok) {
-        setProducts(await productsResponse.json())
+        setProducts(await productsResponse.json());
       }
 
       // Fetch reviews
@@ -115,12 +129,12 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
         `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/seller/${sellerId}/reviews`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
         }
-      )
+      );
       if (reviewsResponse.ok) {
-        setReviews(await reviewsResponse.json())
+        setReviews(await reviewsResponse.json());
       }
 
       // Fetch videos
@@ -128,12 +142,12 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
         `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/seller/${sellerId}/videos`,
         {
           headers: {
-            'Authorization': `Bearer ${publicAnonKey}`
-          }
+            Authorization: `Bearer ${publicAnonKey}`,
+          },
         }
-      )
+      );
       if (videosResponse.ok) {
-        setVideos(await videosResponse.json())
+        setVideos(await videosResponse.json());
       }
 
       // Check follow status
@@ -142,93 +156,93 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
           `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/follow/${sellerId}/status`,
           {
             headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
+              Authorization: `Bearer ${accessToken}`,
+            },
           }
-        )
+        );
         if (followResponse.ok) {
-          const data = await followResponse.json()
-          setIsFollowing(data.following)
+          const data = await followResponse.json();
+          setIsFollowing(data.following);
         }
       }
     } catch (error) {
-      console.error('Failed to fetch seller data:', error)
+      console.error("Failed to fetch seller data:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleFollow = async () => {
-    if (!user || !accessToken) return
+    if (!user || !accessToken) return;
 
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/follow/${sellerId}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
+            Authorization: `Bearer ${accessToken}`,
+          },
         }
-      )
+      );
 
       if (response.ok) {
-        const data = await response.json()
-        setIsFollowing(data.following)
-        
+        const data = await response.json();
+        setIsFollowing(data.following);
+
         // Update local seller follower count
         if (seller) {
           setSeller({
             ...seller,
-            followers: seller.followers + (data.following ? 1 : -1)
-          })
+            followers: seller.followers + (data.following ? 1 : -1),
+          });
         }
       }
     } catch (error) {
-      console.error('Follow error:', error)
+      console.error("Follow error:", error);
     }
-  }
+  };
 
   const handleAddReview = async () => {
-    if (!user || !accessToken || !newReview.comment.trim()) return
+    if (!user || !accessToken || !newReview.comment.trim()) return;
 
     try {
       const response = await fetch(
         `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/reviews`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             sellerId,
             rating: newReview.rating,
-            comment: newReview.comment
-          })
+            comment: newReview.comment,
+          }),
         }
-      )
+      );
 
       if (response.ok) {
-        setNewReview({ rating: 5, comment: '' })
-        
+        setNewReview({ rating: 5, comment: "" });
+
         // Refresh reviews
         const reviewsResponse = await fetch(
           `https://${projectId}.supabase.co/functions/v1/make-server-75c53d23/seller/${sellerId}/reviews`,
           {
             headers: {
-              'Authorization': `Bearer ${publicAnonKey}`
-            }
+              Authorization: `Bearer ${publicAnonKey}`,
+            },
           }
-        )
+        );
         if (reviewsResponse.ok) {
-          setReviews(await reviewsResponse.json())
+          setReviews(await reviewsResponse.json());
         }
       }
     } catch (error) {
-      console.error('Add review error:', error)
+      console.error("Add review error:", error);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -238,7 +252,7 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
           <p className="text-muted-foreground">Loading profile...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!seller) {
@@ -246,19 +260,23 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p>Seller not found</p>
       </div>
-    )
+    );
   }
 
-  const avgRating = reviews.length > 0
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-    : 0
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4">
-          <button onClick={onBack} className="p-2 hover:bg-accent rounded-full mb-4 transition-colors">
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-accent rounded-full mb-4 transition-colors"
+          >
             <ArrowLeft className="w-6 h-6" />
           </button>
 
@@ -277,12 +295,14 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
 
             <div className="flex-1">
               <h1 className="text-3xl mb-2">{seller.name}</h1>
-              
+
               <div className="flex items-center gap-6 mb-4">
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                   <span>{avgRating.toFixed(1)}</span>
-                  <span className="text-muted-foreground">({reviews.length} reviews)</span>
+                  <span className="text-muted-foreground">
+                    ({reviews.length} reviews)
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-muted-foreground" />
@@ -290,14 +310,18 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-muted-foreground">{seller.location.city}</span>
+                  <span className="text-muted-foreground">
+                    {seller.location.city}
+                  </span>
                 </div>
               </div>
 
-              <p className="text-muted-foreground mb-4 max-w-2xl">{seller.bio || 'No bio available'}</p>
+              <p className="text-muted-foreground mb-4 max-w-2xl">
+                {seller.bio || "No bio available"}
+              </p>
 
-              {user && (
-                user.id === sellerId ? (
+              {user &&
+                (user.id === sellerId ? (
                   // Only show "Add Product" if user is a seller
                   user.isSeller ? (
                     <Button onClick={() => setShowAddProduct(true)}>
@@ -306,7 +330,10 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                     </Button>
                   ) : (
                     <div className="flex gap-3">
-                      <Button onClick={() => setShowBecomeSeller(true)} variant="outline">
+                      <Button
+                        onClick={() => setShowBecomeSeller(true)}
+                        variant="outline"
+                      >
                         <Plus className="w-4 h-4 mr-2" />
                         Become a Seller
                       </Button>
@@ -314,27 +341,43 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                   )
                 ) : (
                   <div className="flex gap-3">
-                    <Button onClick={handleFollow} variant={isFollowing ? 'outline' : 'default'}>
+                    <Button
+                      onClick={handleFollow}
+                      variant={isFollowing ? "outline" : "default"}
+                    >
                       <UserPlus className="w-4 h-4 mr-2" />
-                      {isFollowing ? 'Connected' : 'Connect'}
+                      {isFollowing ? "Connected" : "Connect"}
                     </Button>
-                    <Button onClick={() => onMessageClick(sellerId)} variant="outline">
+                    <Button
+                      onClick={() => onMessageClick(sellerId)}
+                      variant="outline"
+                    >
                       <MessageCircle className="w-4 h-4 mr-2" />
                       Message
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => {
-                        // Show COD order for all products
-                        setShowCODOrder(true)
-                      }} 
+                        // Show COD order for all products - choose the first product if none selected
+                        if (products.length > 0) {
+                          setSelectedProduct(products[0]);
+                          setShowCODOrder(true);
+                        } else {
+                          // No products to order
+                          // Keep behavior simple: notify the user
+                          // (could be replaced with a nicer UI toast later)
+                          // eslint-disable-next-line no-alert
+                          alert(
+                            "No products available to order from this seller."
+                          );
+                        }
+                      }}
                       variant="default"
                       className="bg-green-600 hover:bg-green-700"
                     >
                       Order COD
                     </Button>
                   </div>
-                )
-              )}
+                ))}
             </div>
           </div>
         </div>
@@ -345,17 +388,23 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
         <Tabs defaultValue="products" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="about">About</TabsTrigger>
-            <TabsTrigger value="products">Products ({products.length})</TabsTrigger>
+            <TabsTrigger value="products">
+              Products ({products.length})
+            </TabsTrigger>
             <TabsTrigger value="videos">Videos ({videos.length})</TabsTrigger>
-            <TabsTrigger value="reviews">Reviews ({reviews.length})</TabsTrigger>
+            <TabsTrigger value="reviews">
+              Reviews ({reviews.length})
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="about" className="mt-6">
             <Card>
               <CardContent className="pt-6">
                 <h3 className="mb-4">About</h3>
-                <p className="text-muted-foreground mb-6">{seller.bio || 'No bio available'}</p>
-                
+                <p className="text-muted-foreground mb-6">
+                  {seller.bio || "No bio available"}
+                </p>
+
                 {seller.interests.length > 0 && (
                   <>
                     <h3 className="mb-3">Interests</h3>
@@ -377,25 +426,19 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
 
           <TabsContent value="products" className="mt-6">
             {products.length === 0 ? (
-              <p className="text-center text-muted-foreground py-12">No products yet</p>
+              <p className="text-center text-muted-foreground py-12">
+                No products yet
+              </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
-                  <button
+                  <div
                     key={product.id}
-                    onClick={() => {
-                      if (user && user.id !== sellerId) {
-                        // For buyers, show COD order
-                        setSelectedProduct(product)
-                        setShowCODOrder(true)
-                      } else {
-                        // For sellers, show product details
-                        onProductClick(product.id)
-                      }
-                    }}
-                    className="bg-card border border-border rounded-lg shadow-md hover:shadow-xl transition-all overflow-hidden text-left"
+                    className="bg-card border border-border rounded-lg shadow-md hover:shadow-xl transition-all overflow-hidden flex flex-col"
                   >
-                    {product.images && product.images.length > 0 && product.images[0] ? (
+                    {product.images &&
+                    product.images.length > 0 &&
+                    product.images[0] ? (
                       <ImageWithFallback
                         src={product.images[0]}
                         alt={product.title}
@@ -406,17 +449,41 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                         <span className="text-4xl">📦</span>
                       </div>
                     )}
-                    <div className="p-4">
+                    <div className="p-4 flex-1">
                       <h4 className="mb-2 truncate">{product.title}</h4>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{product.description}</p>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {product.description}
+                      </p>
                       <div className="flex items-center justify-between">
-                        <p className="text-purple-600 dark:text-purple-400">${product.price.toFixed(2)}</p>
+                        <p className="text-purple-600 dark:text-purple-400">
+                          ${product.price.toFixed(2)}
+                        </p>
                         {!product.available && (
-                          <span className="text-xs text-red-600">Out of stock</span>
+                          <span className="text-xs text-red-600">
+                            Out of stock
+                          </span>
                         )}
                       </div>
                     </div>
-                  </button>
+                    <div className="p-3 border-t border-border">
+                      {user && user.id !== sellerId ? (
+                        <Button
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            if (product.available) {
+                              setSelectedProduct(product);
+                              setShowCODOrder(true);
+                            } else {
+                              // eslint-disable-next-line no-alert
+                              alert("This product is currently out of stock.");
+                            }
+                          }}
+                        >
+                          Buy Product
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -424,17 +491,24 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
 
           <TabsContent value="videos" className="mt-6">
             {videos.length === 0 ? (
-              <p className="text-center text-muted-foreground py-12">No videos yet</p>
+              <p className="text-center text-muted-foreground py-12">
+                No videos yet
+              </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {videos.map((video) => (
-                  <div key={video.id} className="bg-card border border-border rounded-lg shadow-md overflow-hidden">
+                  <div
+                    key={video.id}
+                    className="bg-card border border-border rounded-lg shadow-md overflow-hidden"
+                  >
                     <div className="aspect-video bg-gradient-to-br from-purple-300 to-pink-300 flex items-center justify-center">
                       <span className="text-4xl">▶️</span>
                     </div>
                     <div className="p-4">
                       <h4 className="mb-2">{video.title}</h4>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{video.description}</p>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {video.description}
+                      </p>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Heart className="w-4 h-4" />
@@ -461,30 +535,39 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
                       <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                      <span className="text-lg font-medium">{avgRating.toFixed(1)}</span>
+                      <span className="text-lg font-medium">
+                        {avgRating.toFixed(1)}
+                      </span>
                     </div>
-                    <span className="text-muted-foreground">({reviews.length} reviews)</span>
+                    <span className="text-muted-foreground">
+                      ({reviews.length} reviews)
+                    </span>
                   </div>
                 </div>
-                
+
                 {/* Rating Distribution */}
                 <div className="space-y-2">
                   {[5, 4, 3, 2, 1].map((rating) => {
-                    const count = reviews.filter(r => r.rating === rating).length
-                    const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0
+                    const count = reviews.filter(
+                      (r) => r.rating === rating
+                    ).length;
+                    const percentage =
+                      reviews.length > 0 ? (count / reviews.length) * 100 : 0;
                     return (
                       <div key={rating} className="flex items-center gap-2">
                         <span className="text-sm w-8">{rating}</span>
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                         <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
-                        <span className="text-sm text-muted-foreground w-8">{count}</span>
+                        <span className="text-sm text-muted-foreground w-8">
+                          {count}
+                        </span>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </CardContent>
@@ -497,39 +580,50 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                   <h3 className="mb-4">Write a Review</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block mb-2 text-sm font-medium">Rating *</label>
+                      <label className="block mb-2 text-sm font-medium">
+                        Rating *
+                      </label>
                       <div className="flex gap-1">
                         {[1, 2, 3, 4, 5].map((rating) => (
                           <button
                             key={rating}
-                            onClick={() => setNewReview({ ...newReview, rating })}
+                            onClick={() =>
+                              setNewReview({ ...newReview, rating })
+                            }
                             className="p-1 hover:scale-110 transition-transform"
                             type="button"
                           >
                             <Star
                               className={`w-8 h-8 ${
                                 rating <= newReview.rating
-                                  ? 'fill-yellow-400 text-yellow-400'
-                                  : 'text-gray-300 hover:text-yellow-300'
+                                  ? "fill-yellow-400 text-yellow-400"
+                                  : "text-gray-300 hover:text-yellow-300"
                               }`}
                             />
                           </button>
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {newReview.rating === 1 && 'Poor'}
-                        {newReview.rating === 2 && 'Fair'}
-                        {newReview.rating === 3 && 'Good'}
-                        {newReview.rating === 4 && 'Very Good'}
-                        {newReview.rating === 5 && 'Excellent'}
+                        {newReview.rating === 1 && "Poor"}
+                        {newReview.rating === 2 && "Fair"}
+                        {newReview.rating === 3 && "Good"}
+                        {newReview.rating === 4 && "Very Good"}
+                        {newReview.rating === 5 && "Excellent"}
                       </p>
                     </div>
                     <div>
-                      <label className="block mb-2 text-sm font-medium">Your Review *</label>
+                      <label className="block mb-2 text-sm font-medium">
+                        Your Review *
+                      </label>
                       <Textarea
                         placeholder="Share your experience with this seller..."
                         value={newReview.comment}
-                        onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                        onChange={(e) =>
+                          setNewReview({
+                            ...newReview,
+                            comment: e.target.value,
+                          })
+                        }
                         rows={4}
                         className="resize-none"
                       />
@@ -537,9 +631,12 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                         {newReview.comment.length}/500 characters
                       </p>
                     </div>
-                    <Button 
+                    <Button
                       onClick={handleAddReview}
-                      disabled={!newReview.comment.trim() || newReview.comment.length > 500}
+                      disabled={
+                        !newReview.comment.trim() ||
+                        newReview.comment.length > 500
+                      }
                       className="w-full"
                     >
                       Submit Review
@@ -550,11 +647,16 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
             )}
 
             {reviews.length === 0 ? (
-              <p className="text-center text-muted-foreground py-12">No reviews yet</p>
+              <p className="text-center text-muted-foreground py-12">
+                No reviews yet
+              </p>
             ) : (
               <div className="space-y-4">
                 {reviews.map((review) => (
-                  <Card key={review.id} className="hover:shadow-md transition-shadow">
+                  <Card
+                    key={review.id}
+                    className="hover:shadow-md transition-shadow"
+                  >
                     <CardContent className="pt-6">
                       <div className="flex items-start gap-4">
                         {review.buyer?.avatar ? (
@@ -565,13 +667,15 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                           />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white flex-shrink-0 border-2 border-purple-200">
-                            {review.buyer?.name?.charAt(0).toUpperCase() || 'U'}
+                            {review.buyer?.name?.charAt(0).toUpperCase() || "U"}
                           </div>
                         )}
                         <div className="flex-1">
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <h4 className="font-medium">{review.buyer?.name || 'Anonymous'}</h4>
+                              <h4 className="font-medium">
+                                {review.buyer?.name || "Anonymous"}
+                              </h4>
                               <div className="flex items-center gap-2 mt-1">
                                 <div className="flex gap-1">
                                   {[1, 2, 3, 4, 5].map((star) => (
@@ -579,18 +683,18 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                                       key={star}
                                       className={`w-4 h-4 ${
                                         star <= review.rating
-                                          ? 'fill-yellow-400 text-yellow-400'
-                                          : 'text-muted-foreground/30'
+                                          ? "fill-yellow-400 text-yellow-400"
+                                          : "text-muted-foreground/30"
                                       }`}
                                     />
                                   ))}
                                 </div>
                                 <span className="text-sm text-muted-foreground">
-                                  {review.rating === 1 && 'Poor'}
-                                  {review.rating === 2 && 'Fair'}
-                                  {review.rating === 3 && 'Good'}
-                                  {review.rating === 4 && 'Very Good'}
-                                  {review.rating === 5 && 'Excellent'}
+                                  {review.rating === 1 && "Poor"}
+                                  {review.rating === 2 && "Fair"}
+                                  {review.rating === 3 && "Good"}
+                                  {review.rating === 4 && "Very Good"}
+                                  {review.rating === 5 && "Excellent"}
                                 </span>
                               </div>
                             </div>
@@ -599,7 +703,9 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
                             </span>
                           </div>
                           <div className="bg-gray-50 p-3 rounded-lg">
-                            <p className="text-gray-700 leading-relaxed">{review.comment}</p>
+                            <p className="text-gray-700 leading-relaxed">
+                              {review.comment}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -618,7 +724,7 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
           onClose={() => setShowAddProduct(false)}
           onSuccess={() => {
             // Refresh products
-            fetchSellerData()
+            fetchSellerData();
           }}
         />
       )}
@@ -631,9 +737,9 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
             // Refresh user data and seller data
             if (user) {
               // Update user's isSeller status
-              user.isSeller = true
+              user.isSeller = true;
             }
-            fetchSellerData()
+            fetchSellerData();
           }}
         />
       )}
@@ -644,14 +750,14 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
           product={selectedProduct}
           seller={seller}
           onClose={() => {
-            setShowCODOrder(false)
-            setSelectedProduct(null)
+            setShowCODOrder(false);
+            setSelectedProduct(null);
           }}
           onSuccess={(orderId) => {
-            setShowCODOrder(false)
-            setSelectedProduct(null)
-            setTrackingOrderId(orderId)
-            setShowDeliveryTracking(true)
+            setShowCODOrder(false);
+            setSelectedProduct(null);
+            setTrackingOrderId(orderId);
+            setShowDeliveryTracking(true);
           }}
         />
       )}
@@ -661,11 +767,11 @@ export function SellerProfile({ sellerId, onBack, onMessageClick, onProductClick
         <DeliveryTracking
           orderId={trackingOrderId}
           onClose={() => {
-            setShowDeliveryTracking(false)
-            setTrackingOrderId(null)
+            setShowDeliveryTracking(false);
+            setTrackingOrderId(null);
           }}
         />
       )}
     </div>
-  )
+  );
 }
