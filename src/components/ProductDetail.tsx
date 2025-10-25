@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, ShoppingCart, ArrowLeft } from "lucide-react";
+import { CODOrder } from "./CODOrder";
 import { projectId, publicAnonKey } from "../utils/supabase/info";
 import { useAuth } from "./AuthContext";
 import { Button } from "./ui/button";
@@ -42,6 +43,7 @@ export function ProductDetail({
   const [seller, setSeller] = useState<Seller | null>(null);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [showCODOrder, setShowCODOrder] = useState(false);
   const { user, accessToken } = useAuth();
 
   useEffect(() => {
@@ -261,11 +263,37 @@ export function ProductDetail({
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   {addingToCart ? "Adding..." : "Add to Cart"}
                 </Button>
+                <Button
+                  onClick={() => {
+                    if (!product?.available) {
+                      // eslint-disable-next-line no-alert
+                      alert("This product is currently out of stock.");
+                      return;
+                    }
+                    setShowCODOrder(true);
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  size="lg"
+                >
+                  Buy Now
+                </Button>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
+      {showCODOrder && product && seller && (
+        <CODOrder
+          product={product}
+          seller={seller}
+          onClose={() => setShowCODOrder(false)}
+          onSuccess={(orderId) => {
+            setShowCODOrder(false);
+            // close product detail as well after successful order
+            onClose();
+          }}
+        />
+      )}
     </div>
   );
 }
