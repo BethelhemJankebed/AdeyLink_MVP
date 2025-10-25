@@ -1,0 +1,8 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[context.production.environment]
+  # Add any required production env vars here, or set them in Netlify UI
+  # EXAMPLE: VITE_SUPABASE_URL = "https://..."
+
